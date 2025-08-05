@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QSlider
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Qt
 from PySide6.QtCharts import QChart, QChartView, QLineSeries
-from utils import generate_pattern_image, calculate_moire_intensity, quantize_intensity, generate_heatmap
+from sources.utils import generate_pattern_image, calculate_moire_intensity, quantize_intensity, generate_heatmap
 import numpy as np
 import cv2
 
