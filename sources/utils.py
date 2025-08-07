@@ -2,51 +2,108 @@
 import numpy as np
 import cv2
 
-def generate_pattern_image(freq1, angle1, freq2, angle2, size):
-    """
-    정현파 기반 Moiré 간섭 이미지 생성 함수
-    (기존 함수 구조 유지, 내부는 과학적 모델로 교체)
-    """
-    import numpy as np
+import numpy as np
 
+def generate_pattern_image(params: dict, size):
+    """
+    다양한 파형 기반 Moiré 간섭 이미지 생성 함수
+    Supports: sin, square, triangle, checker
+    """
     x = np.arange(size)
     y = np.arange(size)
     X, Y = np.meshgrid(x, y)
 
-    theta1 = np.deg2rad(angle1)
-    theta2 = np.deg2rad(angle2)
+    theta1 = np.deg2rad(params.get('angle1', 0))
+    theta2 = np.deg2rad(params.get('angle2', 0))
 
-    # 첫 번째 패턴
-    pattern1 = np.sin(2 * np.pi * freq1 * (X * np.cos(theta1) + Y * np.sin(theta1)) / size)
+    freq1 = params.get('freq1', 11)
+    freq2 = params.get('freq2', 10)
 
-    # 두 번째 패턴
-    pattern2 = np.sin(2 * np.pi * freq2 * (X * np.cos(theta2) + Y * np.sin(theta2)) / size)
+    type1 = params.get('pattern_type1', 'sin')
+    type2 = params.get('pattern_type2', 'sin')
 
-    # 파형 간섭
+    def base_pattern(freq, theta, ptype):
+        Xr = X * np.cos(theta) + Y * np.sin(theta)
+        Yr = -X * np.sin(theta) + Y * np.cos(theta)
+        wave = 2 * np.pi * freq * Xr / size
+
+        if ptype == "sin":
+            return np.sin(wave)
+        elif ptype == "square":
+            return np.sign(np.sin(wave))
+        elif ptype == "triangle":
+            return 2 * np.abs(2 * (wave / (2*np.pi) % 1) - 1) - 1
+        elif ptype == "checker":
+            checks = ((np.floor(freq * Xr / size) + np.floor(freq * Yr / size)) % 2)
+            return checks * 2 - 1  # normalize to [-1, 1]
+        else:
+            raise ValueError(f"Unsupported pattern type: {ptype}")
+
+    pattern1 = base_pattern(freq1, theta1, type1)
+    pattern2 = base_pattern(freq2, theta2, type2)
+
     moire = (pattern1 + pattern2) / 2
+    normalized = ((moire + 1) / 2 * 255).astype(np.uint8)
+    return normalized
 
-    # 0~255 정규화
-    moire_normalized = ((moire + 1) / 2 * 255).astype(np.uint8)
 
-    return moire_normalized
+def calculate_moire_intensity(image: np.ndarray) -> float:
+    """
+    이미지의 Moiré 강도(에너지 루트 값)를 계산
 
-def calculate_moire_intensity(image):
+    Args:
+        image (np.ndarray): 그레이스케일 이미지 (2D)
+
+    Returns:
+        float: 정규화된 Moiré 강도
+    """
+    assert image.ndim == 2, "Input must be a 2D grayscale image."
+
     f = np.fft.fft2(image)
     fshift = np.fft.fftshift(f)
     magnitude = np.abs(fshift)
+
+    # 전체 주파수 영역 에너지
     energy = np.sum(magnitude ** 2)
     norm_energy = energy / (image.shape[0] * image.shape[1])
-    return norm_energy ** 0.5
 
-def quantize_intensity(intensity, levels=10):
-    return min(int(intensity / 255 * levels), levels)
+    return np.sqrt(norm_energy)
 
-def generate_heatmap(image):
+
+def quantize_intensity(intensity: float, levels: int = 10) -> int:
+    """
+    Moiré 강도를 0~levels 구간으로 정량화
+
+    Args:
+        intensity (float): 계산된 강도 값
+        levels (int): quantization 구간 수 (기본 10)
+
+    Returns:
+        int: 0 ~ levels 정수값
+    """
+    q = int(intensity / 255 * levels)
+    return int(np.clip(q, 0, levels))
+
+
+def generate_heatmap(image: np.ndarray) -> np.ndarray:
+    """
+    FFT 기반 Heatmap 생성 (Color Map 적용)
+
+    Args:
+        image (np.ndarray): 그레이스케일 이미지 (2D)
+
+    Returns:
+        np.ndarray: 컬러 heatmap (BGR)
+    """
+    assert image.ndim == 2, "Input must be a 2D grayscale image."
+
     f = np.fft.fft2(image)
     fshift = np.fft.fftshift(f)
     magnitude = np.log(np.abs(fshift) + 1)
-    mag_norm = np.zeros_like(magnitude, dtype=np.float32)
-    cv2.normalize(magnitude, mag_norm, 0, 255, cv2.NORM_MINMAX)
+
+    # 정규화 (0 ~ 255)
+    mag_norm = cv2.normalize(magnitude, np.zeros_like(magnitude, dtype=np.float32), 0, 255, cv2.NORM_MINMAX)
     mag_norm = mag_norm.astype(np.uint8)
+
     heatmap = cv2.applyColorMap(mag_norm, cv2.COLORMAP_JET)
     return heatmap
