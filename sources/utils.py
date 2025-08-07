@@ -36,6 +36,8 @@ def generate_pattern_image(params: dict, size):
         elif ptype == "checker":
             checks = ((np.floor(freq * Xr / size) + np.floor(freq * Yr / size)) % 2)
             return checks * 2 - 1  # normalize to [-1, 1]
+        elif ptype == "sawtooth":
+            return 2 * ((wave / (2*np.pi)) % 1) - 1
         else:
             raise ValueError(f"Unsupported pattern type: {ptype}")
 

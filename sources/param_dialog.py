@@ -23,10 +23,10 @@ class ParameterDialog(QDialog):
         self.angle2.setValue(params.get('angle2', 5))
 
         self.pattern1_combo = QComboBox()
-        self.pattern1_combo.addItems(["sin", "square", "triangle", "checker"])
+        self.pattern1_combo.addItems(["sin", "square", "triangle", "checker", "sawtooth"])
 
         self.pattern2_combo = QComboBox()
-        self.pattern2_combo.addItems(["sin", "square", "triangle", "checker"])
+        self.pattern2_combo.addItems(["sin", "square", "triangle", "checker", "sawtooth"])
 
 
         layout = QFormLayout(self)
