@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("⚠️ 이전 설정이 없습니다.", 3000)
 
     def save_all(self):
-        save_all_result("logs", self.viewer.image, self.viewer.heatmap, self.viewer.intensity, self.viewer.quantized, self.viewer.series)
+        save_all_result("logs", self.viewer.image, self.viewer.heatmap, self.viewer.series)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

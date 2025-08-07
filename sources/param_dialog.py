@@ -7,19 +7,19 @@ class ParameterDialog(QDialog):
         self.setWindowTitle("Set Pattern Parameters")
 
         self.freq1 = QSpinBox()
-        self.freq1.setRange(1, 1000)
+        self.freq1.setRange(1, 10000)
         self.freq1.setValue(params.get('freq1', 11)) 
 
         self.angle1 = QSpinBox()
-        self.angle1.setRange(0, 180)
+        self.angle1.setRange(-90, 90)
         self.angle1.setValue(params.get('angle1', 0))
 
         self.freq2 = QSpinBox()
-        self.freq2.setRange(1, 1000)
+        self.freq2.setRange(1, 10000)
         self.freq2.setValue(params.get('freq2', 10)) 
 
         self.angle2 = QSpinBox()
-        self.angle2.setRange(0, 180)
+        self.angle2.setRange(-90, 90)
         self.angle2.setValue(params.get('angle2', 5))
 
         self.pattern1_combo = QComboBox()

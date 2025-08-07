@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QSlider, QHBoxLayout
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Qt
 from PySide6.QtCharts import QChart, QChartView, QLineSeries
-from sources.utils import generate_pattern_image, calculate_moire_intensity, quantize_intensity, generate_heatmap
+from sources.utils import generate_pattern_image, generate_heatmap
 import numpy as np
 import cv2
 
@@ -17,28 +17,18 @@ class MoireViewer(QWidget):
         # ---- 위쪽 4단 이미지/라벨 구역 ----
         self.image_label = QLabel("Moire Image")
         self.image_label.setScaledContents(True)
-        self.image_label.setFixedSize(256, 256)
+        self.image_label.setFixedSize(512, 512)
 
         self.heatmap_label = QLabel("FFT Heatmap")
         self.heatmap_label.setScaledContents(True)
-        self.heatmap_label.setFixedSize(256, 256)
-
-        self.intensity_label = QLabel("Intensity")
-        self.intensity_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.intensity_label.setFixedSize(256, 256)
-
-        self.quantization_label = QLabel("Quantized")
-        self.quantization_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.quantization_label.setFixedSize(256, 256)
+        self.heatmap_label.setFixedSize(512, 512)
 
         top_row = QHBoxLayout()
         top_row.addWidget(self.image_label)
         top_row.addWidget(self.heatmap_label)
-        top_row.addWidget(self.intensity_label)
-        top_row.addWidget(self.quantization_label)
         
         self.slider_freq1 = QSlider(Qt.Orientation.Horizontal)
-        self.slider_freq1.setRange(1, 100)
+        self.slider_freq1.setRange(1, 10000)
         self.slider_freq1.setValue(self.params['freq1'])
         self.slider_freq1.valueChanged.connect(self.update_from_slider)
         
@@ -63,7 +53,6 @@ class MoireViewer(QWidget):
 
         self.setLayout(main_layout)
 
-        self.step = 0
         self.update_view()
 
     def update_from_slider(self, value):
@@ -83,9 +72,6 @@ class MoireViewer(QWidget):
         size = self.params['size']
         moire = generate_pattern_image(self.params, size)
         self.image = moire
-
-        self.intensity = calculate_moire_intensity(moire)
-        self.quantized = quantize_intensity(self.intensity)
         self.heatmap = generate_heatmap(moire)
 
         self.image_label.setPixmap(QPixmap.fromImage(QImage(moire.data, size, size, size, QImage.Format.Format_Grayscale8)))
@@ -93,8 +79,18 @@ class MoireViewer(QWidget):
         qheatmap = QImage(self.heatmap.data, w, h, 3*w, QImage.Format.Format_RGB888)
         self.heatmap_label.setPixmap(QPixmap.fromImage(qheatmap))
 
-        self.intensity_label.setText(f"Moire Intensity: {self.intensity:.2f}")
-        self.quantization_label.setText(f"Quantized Value: {self.quantized}")
+        # 중심 수직 단면 (이미지가 grayscale이라고 가정)
+        if int(self.params.get('angle1', 0)) == 0:
+            mid_x = self.image.shape[1] // 2
+            section = self.image[:, mid_x]
 
-        self.series.append(self.step, self.intensity)
-        self.step += 1
+            self.series.clear()
+            for i, val in enumerate(section):
+                self.series.append(i, float(val))
+
+            # 축만 다시 그리기
+            self.chart.removeAxis(self.chart.axisX())
+            self.chart.removeAxis(self.chart.axisY())
+            self.chart.createDefaultAxes()
+        else:
+            self.series.clear()

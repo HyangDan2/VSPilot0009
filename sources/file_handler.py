@@ -18,18 +18,13 @@ def save_result(image_path, image, intensity, quantized):
     thumbnail = cv2.resize(image, (128, 128))
     cv2.imwrite(thumb_path, thumbnail)
 
-def save_all_result(log_base_dir, image, heatmap, intensity, quantized, series):
+def save_all_result(log_base_dir, image, heatmap, series):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = os.path.join(log_base_dir, f"log_{timestamp}")
     os.makedirs(log_dir, exist_ok=True)
 
     cv2.imwrite(os.path.join(log_dir, "moire.png"), image)
     cv2.imwrite(os.path.join(log_dir, "heatmap.png"), heatmap)
-
-    with open(os.path.join(log_dir, "metrics.csv"), 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["Moire Intensity", "Quantized Value"])
-        writer.writerow([intensity, quantized])
 
     xs = [p.x() for p in series.pointsVector()]
     ys = [p.y() for p in series.pointsVector()]
