@@ -17,11 +17,11 @@ class MoireViewer(QWidget):
         # ---- 위쪽 4단 이미지/라벨 구역 ----
         self.image_label = QLabel("Moire Image")
         self.image_label.setScaledContents(True)
-        self.image_label.setFixedSize(512, 512)
+        self.image_label.setFixedSize(384, 384)
 
         self.heatmap_label = QLabel("FFT Heatmap")
         self.heatmap_label.setScaledContents(True)
-        self.heatmap_label.setFixedSize(512, 512)
+        self.heatmap_label.setFixedSize(384, 384)
 
         top_row = QHBoxLayout()
         top_row.addWidget(self.image_label)
@@ -43,7 +43,7 @@ class MoireViewer(QWidget):
         self.chart.createDefaultAxes()
 
         self.chart_view = QChartView(self.chart)
-        self.chart_view.setMinimumHeight(200)
+        self.chart_view.setMinimumHeight(300)
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_row)
@@ -80,17 +80,13 @@ class MoireViewer(QWidget):
         self.heatmap_label.setPixmap(QPixmap.fromImage(qheatmap))
 
         # 중심 수직 단면 (이미지가 grayscale이라고 가정)
-        if int(self.params.get('angle1', 0)) == 0:
-            mid_x = self.image.shape[1] // 2
-            section = self.image[:, mid_x]
-
+        if self.series:
             self.series.clear()
-            for i, val in enumerate(section):
-                self.series.append(i, float(val))
-
-            # 축만 다시 그리기
-            self.chart.removeAxis(self.chart.axisX())
-            self.chart.removeAxis(self.chart.axisY())
-            self.chart.createDefaultAxes()
+            section = self.image[:, 0]
+        for y, val in enumerate(section):
+            self.series.append(y, float(val))
+        if self.chart.axisX() and self.chart.axisY():
+            self.chart.axisX().setRange(0, len(section))
+            self.chart.axisY().setRange(0, 255)
         else:
-            self.series.clear()
+            self.chart.createDefaultAxes()
